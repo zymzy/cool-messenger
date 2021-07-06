@@ -39,8 +39,15 @@ const Sidebar = (props) => {
 };
 
 const mapStateToProps = (state) => {
+  // Creates a copy of the 'conversations' state array where each member element has a 'latestMsgTime' property
+  const _conversations = state.conversations.length ? state.conversations.map(convo => {
+    convo.latestMsgTime = Date.parse(convo.messages[convo.messages.length - 1].createdAt);
+    return convo
+  }) : [];
+
+  // Return the '_conversations' array sorted by the 'latestMsgTime'
   return {
-    conversations: state.conversations
+    conversations: _conversations.length ? _conversations.sort((a, b) => b.latestMsgTime - a.latestMsgTime) : _conversations
   };
 };
 
