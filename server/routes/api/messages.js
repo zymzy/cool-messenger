@@ -13,6 +13,12 @@ router.post("/", async (req, res, next) => {
 
     // if we already know conversation id, we can save time and just add it to message and return
     if (conversationId) {
+      const conversation = await Conversation.findOne({ where: { id: conversationId } });
+
+      // if the message sender is not a participant in the specified conversation, reject the request
+      if (req.user.id != conversation.user1Id && req.user.id != conversation.user2Id)
+        return res.status(401).json({ error: "This action is unauthorized" });
+
       const message = await Message.create({ senderId, text, conversationId });
       return res.json({ message, sender });
     }
