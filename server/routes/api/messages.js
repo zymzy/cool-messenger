@@ -16,8 +16,8 @@ router.post("/", async (req, res, next) => {
       const conversation = await Conversation.findOne({ where: { id: conversationId } });
 
       // if the message sender is not a participant in the specified conversation, reject the request
-      if (req.user.id != conversation.user1Id && req.user.id != conversation.user2Id)
-        return res.status(401).json({ error: "This action is unauthorized" });
+      if (senderId != conversation.user1Id && senderId != conversation.user2Id)
+        return res.status(403).json({ error: "This action is forbidden." });
 
       const message = await Message.create({ senderId, text, conversationId });
       return res.json({ message, sender });
