@@ -13,7 +13,7 @@ router.post("/", async (req, res, next) => {
 
     // if we already know conversation id, we can save time and just add it to message and return
     if (conversationId) {
-      const conversation = await Conversation.findOne({ where: { id: conversationId } });
+      const conversation = await Conversation.findByPk(conversationId);
 
       // if the message sender is not a participant in the specified conversation, reject the request
       if (senderId != conversation.user1Id && senderId != conversation.user2Id)

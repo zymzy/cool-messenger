@@ -1,5 +1,3 @@
-require("dotenv").config(); /* Sets up the environment variables from your .env file*/
-
 const db = require("./db");
 const { User } = require("./models");
 const Conversation = require("./models/conversation");
