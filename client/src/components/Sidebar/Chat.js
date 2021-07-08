@@ -1,9 +1,11 @@
 import React, { Component } from "react";
-import { Box } from "@material-ui/core";
+import { Box, Badge } from "@material-ui/core";
 import { BadgeAvatar, ChatContent } from "../Sidebar";
 import { withStyles } from "@material-ui/core/styles";
-import { setActiveChat } from "../../store/activeConversation";
 import { connect } from "react-redux";
+
+import { setActiveChat } from "../../store/activeConversation";
+import { clearUnreadBadge } from "../../store/conversations";
 
 const styles = {
   root: {
@@ -15,12 +17,20 @@ const styles = {
     alignItems: "center",
     "&:hover": {
       cursor: "grab",
-    },
+    }
   },
+  badge: {
+    fontWeight: "bold",
+    marginRight: 30,
+  },
+  badgeRoot: {
+    width: "20px"
+  }
 };
 
 class Chat extends Component {
   handleClick = async (conversation) => {
+    this.props.clearUnreadBadge(conversation.id);
     await this.props.setActiveChat(conversation.otherUser.username);
   };
 
@@ -39,6 +49,7 @@ class Chat extends Component {
           sidebar={true}
         />
         <ChatContent conversation={this.props.conversation} />
+        <Badge badgeContent={this.props.conversation.unreadCount} color="primary" classes={{ badge: classes.badge, root: classes.badgeRoot}} />
       </Box>
     );
   }
@@ -49,6 +60,9 @@ const mapDispatchToProps = (dispatch) => {
     setActiveChat: (id) => {
       dispatch(setActiveChat(id));
     },
+    clearUnreadBadge: (convoId) => {
+      dispatch(clearUnreadBadge(convoId));
+    }
   };
 };
 

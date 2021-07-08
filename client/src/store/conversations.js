@@ -4,6 +4,8 @@ import {
   addSearchedUsersToStore,
   removeOfflineUserFromStore,
   addMessageToStore,
+  incrementUnreadBadgeFromStore,
+  clearUnreadBadgeFromStore
 } from "./utils/reducerFunctions";
 
 // ACTIONS
@@ -15,6 +17,8 @@ const REMOVE_OFFLINE_USER = "REMOVE_OFFLINE_USER";
 const SET_SEARCHED_USERS = "SET_SEARCHED_USERS";
 const CLEAR_SEARCHED_USERS = "CLEAR_SEARCHED_USERS";
 const ADD_CONVERSATION = "ADD_CONVERSATION";
+const INCREMENT_UNREAD = "INCREMENT_UNREAD";
+const CLEAR_UNREAD = "CLEAR_UNREAD";
 
 // ACTION CREATORS
 
@@ -67,6 +71,22 @@ export const addConversation = (recipientId, newMessage) => {
   };
 };
 
+// action creators for handling unread count badge
+
+export const incrementUnreadBadge = (convoId) => {
+  return {
+    type: INCREMENT_UNREAD,
+    payload: convoId
+  }
+};
+
+export const clearUnreadBadge = (convoId) => {
+  return {
+    type: CLEAR_UNREAD,
+    payload: convoId
+  }
+};
+
 // REDUCER
 
 const reducer = (state = [], action) => {
@@ -91,6 +111,10 @@ const reducer = (state = [], action) => {
         action.payload.recipientId,
         action.payload.newMessage
       );
+    case INCREMENT_UNREAD:
+      return incrementUnreadBadgeFromStore(state, action.payload);
+    case CLEAR_UNREAD:
+      return clearUnreadBadgeFromStore(state, action.payload);
     default:
       return state;
   }

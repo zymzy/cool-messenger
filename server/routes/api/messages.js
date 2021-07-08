@@ -49,4 +49,10 @@ router.post("/", async (req, res, next) => {
   }
 });
 
+router.patch("/seen", async (req, res, next) => {
+  // perform a query to the db to set all unread messages' 'isRead' field to true
+
+  // emit a socket event to convo channel to inform other user that unread messages have been seen
+});
+
 module.exports = router;
