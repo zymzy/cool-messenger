@@ -32,6 +32,10 @@ const useStyles = makeStyles((theme) => ({
     justifyContent: "center",
     borderRadius: 10,
   },
+  unreadMsgStyle: {
+    color: "#000",
+    fontWeight: "bold"
+  }
 }));
 
 const ChatContent = (props) => {
@@ -46,7 +50,7 @@ const ChatContent = (props) => {
         <Typography className={classes.username}>
           {otherUser.username}
         </Typography>
-        <Typography className={classes.previewText}>
+        <Typography className={`${classes.previewText} ${props.hasUnreadMsg ? classes.unreadMsgStyle : ""}`}>
           {latestMessageText}
         </Typography>
       </Box>

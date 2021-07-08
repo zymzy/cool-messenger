@@ -5,6 +5,7 @@ import {
   addConversation,
   setNewMessage,
   setSearchedUsers,
+  clearUnreadBadge
 } from "../conversations";
 import { gotUser, setFetchingStatus } from "../user";
 
@@ -117,3 +118,12 @@ export const searchUsers = (searchTerm) => async (dispatch) => {
     console.error(error);
   }
 };
+
+export const syncSeenMessages = (convoId, messageIds) => async (dispatch) => {
+  dispatch(clearUnreadBadge(convoId));
+  try {
+    await axios.patch('/api/messages/seen', { convoId, messageIds, socketId: socket.id });
+  } catch (error) {
+    console.error(error);
+  }
+}

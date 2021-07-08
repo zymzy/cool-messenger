@@ -5,7 +5,7 @@ import { withStyles } from "@material-ui/core/styles";
 import { connect } from "react-redux";
 
 import { setActiveChat } from "../../store/activeConversation";
-import { clearUnreadBadge } from "../../store/conversations";
+import { syncSeenMessages } from "../../store/utils/thunkCreators";
 
 const styles = {
   root: {
@@ -30,7 +30,13 @@ const styles = {
 
 class Chat extends Component {
   handleClick = async (conversation) => {
-    this.props.clearUnreadBadge(conversation.id);
+    const otherUserId = conversation.otherUser.id;
+    const seenMessageIds = [];
+    conversation.messages.forEach(msg => {
+      if (msg.isRead === false && msg.senderId === otherUserId) seenMessageIds.push(msg.id);
+    });
+
+    this.props.syncSeenMessages(conversation.id, seenMessageIds);
     await this.props.setActiveChat(conversation.otherUser.username);
   };
 
@@ -48,7 +54,7 @@ class Chat extends Component {
           online={otherUser.online}
           sidebar={true}
         />
-        <ChatContent conversation={this.props.conversation} />
+        <ChatContent conversation={this.props.conversation} hasUnreadMsg={this.props.conversation.unreadCount > 0} />
         <Badge badgeContent={this.props.conversation.unreadCount} color="primary" classes={{ badge: classes.badge, root: classes.badgeRoot}} />
       </Box>
     );
@@ -60,8 +66,8 @@ const mapDispatchToProps = (dispatch) => {
     setActiveChat: (id) => {
       dispatch(setActiveChat(id));
     },
-    clearUnreadBadge: (convoId) => {
-      dispatch(clearUnreadBadge(convoId));
+    syncSeenMessages: (convoId, messageIds) => {
+      dispatch(syncSeenMessages(convoId, messageIds));
     }
   };
 };

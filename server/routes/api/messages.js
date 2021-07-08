@@ -1,6 +1,7 @@
 const router = require("express").Router();
 const { Conversation, Message } = require("../../db/models");
 const onlineUsers = require("../../onlineUsers");
+const { Op } = require("sequelize");
 
 // expects {recipientId, text, conversationId } in body (conversationId will be null if no conversation exists yet)
 router.post("/", async (req, res, next) => {
@@ -51,8 +52,25 @@ router.post("/", async (req, res, next) => {
 
 router.patch("/seen", async (req, res, next) => {
   // perform a query to the db to set all unread messages' 'isRead' field to true
+  try {
+    const totalAffectedRows = await Message.update({ isRead: true }, { where: {
+      id: {
+        [Op.in]: req.body.messageIds
+      }
+    } });
+    res.sendStatus(200);
 
-  // emit a socket event to convo channel to inform other user that unread messages have been seen
+    // emit a socket event to convo channel to notify both users that unread messages have been seen and that db is synced
+    // (socket.io) 'server.sockets' is an alias to the default namespace. 'namespace.sockets' is a Map
+    // '.emit()' could be changed to 'to("roomX").emit()' once rooms are implemented
+    req.app.socketIo.emit("messages-are-seen", {
+      convoId: req.body.convoId,
+      messageIds: req.body.messageIds
+    });
+  } catch (error) {
+    console.log(error)
+    next(error)
+  }
 });
 
 module.exports = router;

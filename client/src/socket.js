@@ -4,8 +4,10 @@ import {
   setNewMessage,
   removeOfflineUser,
   addOnlineUser,
-  incrementUnreadBadge
+  incrementUnreadBadge,
+  setMessagesAsSeen
 } from "./store/conversations";
+import { syncSeenMessages } from "./store/utils/thunkCreators";
 
 const socket = io(window.location.origin);
 
@@ -21,6 +23,8 @@ socket.on("connect", () => {
   });
   
   socket.on("new-message", (data) => {
+    store.dispatch(setNewMessage(data.message, data.sender));
+
     const activeConvoOtherUser = store.getState().activeConversation;
 
     if (activeConvoOtherUser === "") store.dispatch(incrementUnreadBadge(data.message.conversationId));
@@ -30,10 +34,14 @@ socket.on("connect", () => {
 
       if (senderId !== activeConvoOtherUserId) {
         store.dispatch(incrementUnreadBadge(data.message.conversationId));
+      } else {
+        store.dispatch(syncSeenMessages(data.message.conversationId, [data.message.id]));
       }
     }
+  });
 
-    store.dispatch(setNewMessage(data.message, data.sender));
+  socket.on("messages-are-seen", (data) => {
+    store.dispatch(setMessagesAsSeen(data));
   });
 });
 

@@ -1,5 +1,3 @@
-import socket from "../../socket";
-
 export const addMessageToStore = (state, payload) => {
   const { message, sender } = payload;
   // if sender isn't null, that means the message needs to be put in a brand new convo
@@ -93,9 +91,23 @@ export const incrementUnreadBadgeFromStore = (state, convoId) => {
 };
 
 export const clearUnreadBadgeFromStore = (state, convoId) => {
-  socket.emit("messages-seen");
   return state.map((convo) => {
     if (convo.id === convoId) return { ...convo, unreadCount: 0};
     return convo;
+  });
+};
+
+export const setMessagesAsSeenToStore = (state, payload) => {
+  const { convoId, messageIds } = payload;
+
+  return state.map((convo) => {
+    if (convo.id === convoId) {
+      const updatedMsgs = convo.messages.map((msg) => {
+        if (messageIds.includes(msg.id)) return { ...msg, isRead: true };
+        return msg;
+      });
+      return { ...convo, messages: updatedMsgs };
+    }
+    else return convo;
   });
 };

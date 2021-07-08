@@ -5,7 +5,8 @@ import {
   removeOfflineUserFromStore,
   addMessageToStore,
   incrementUnreadBadgeFromStore,
-  clearUnreadBadgeFromStore
+  clearUnreadBadgeFromStore,
+  setMessagesAsSeenToStore
 } from "./utils/reducerFunctions";
 
 // ACTIONS
@@ -19,6 +20,7 @@ const CLEAR_SEARCHED_USERS = "CLEAR_SEARCHED_USERS";
 const ADD_CONVERSATION = "ADD_CONVERSATION";
 const INCREMENT_UNREAD = "INCREMENT_UNREAD";
 const CLEAR_UNREAD = "CLEAR_UNREAD";
+const SET_MESSAGES_AS_SEEN = "SET_MESSAGES_AS_SEEN";
 
 // ACTION CREATORS
 
@@ -87,6 +89,14 @@ export const clearUnreadBadge = (convoId) => {
   }
 };
 
+// action creator to set unread messages as seen; param 'data' is of form { convoId: number, messageIds: number[] }
+export const setMessagesAsSeen = (data) => {
+  return {
+    type: SET_MESSAGES_AS_SEEN,
+    payload: data
+  }
+};
+
 // REDUCER
 
 const reducer = (state = [], action) => {
@@ -115,6 +125,8 @@ const reducer = (state = [], action) => {
       return incrementUnreadBadgeFromStore(state, action.payload);
     case CLEAR_UNREAD:
       return clearUnreadBadgeFromStore(state, action.payload);
+    case SET_MESSAGES_AS_SEEN:
+      return setMessagesAsSeenToStore(state, action.payload);
     default:
       return state;
   }
