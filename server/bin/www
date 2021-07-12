@@ -84,9 +84,7 @@ io.on("connection", async (socket) => {
   socket.on("go-online", (id) => {
     if (!validateSenderId(decodedToken.id, id)) return;
 
-    if (!onlineUsers.includes(id)) {
-      onlineUsers.push(id);
-    }
+    onlineUsers.add(id);
     // send the user who just went online to all conversation partners who are already online
     socket.to(convoIds).emit("add-online-user", id);
   });
@@ -110,11 +108,9 @@ io.on("connection", async (socket) => {
   socket.on("logout", (id) => {
     if (!validateSenderId(decodedToken.id, id)) return;
 
-    if (onlineUsers.includes(id)) {
-      userIndex = onlineUsers.indexOf(id);
-      onlineUsers.splice(userIndex, 1);
-      socket.to(convoIds).emit("remove-offline-user", id);
-    }
+    onlineUsers.delete(id);
+    socket.to(convoIds).emit("remove-offline-user", id);
+    socket.disconnect(true);
   });
 });
 
