@@ -7,26 +7,32 @@ import {
 } from "./store/conversations";
 import { processIncomingMessage } from "./store/utils/thunkCreators";
 
-const socket = io(window.location.origin);
+export default function socketInit() {
+  const jwt = localStorage.getItem('messenger-token');
 
-socket.on("connect", () => {
-  console.log("connected to server");
+  if (!jwt) throw Error("User is not authenticated. Please log in or sign up.");
 
-  socket.on("add-online-user", (id) => {
-    store.dispatch(addOnlineUser(id));
-  });
-
-  socket.on("remove-offline-user", (id) => {
-    store.dispatch(removeOfflineUser(id));
-  });
+  const socket = io(window.location.origin, { auth: { token: jwt } });
   
-  socket.on("new-message", (data) => {
-    store.dispatch(processIncomingMessage(data));
+  socket.on("connect", () => {
+    console.log("connected to server");
+  
+    socket.on("add-online-user", (id) => {
+      store.dispatch(addOnlineUser(id));
+    });
+  
+    socket.on("remove-offline-user", (id) => {
+      store.dispatch(removeOfflineUser(id));
+    });
+    
+    socket.on("new-message", (data) => {
+      store.dispatch(processIncomingMessage(data));
+    });
+  
+    socket.on("messages-are-seen", (data) => {
+      store.dispatch(setMessagesAsSeen(data));
+    });
   });
 
-  socket.on("messages-are-seen", (data) => {
-    store.dispatch(setMessagesAsSeen(data));
-  });
-});
-
-export default socket;
+  return socket;
+}

@@ -1,5 +1,5 @@
 import axios from "axios";
-import socket from "../../socket";
+import socketInit from "../../socket";
 import {
   gotConversations,
   addConversation,
@@ -17,12 +17,15 @@ axios.interceptors.request.use(async function (config) {
   return config;
 });
 
+let socket;
+
 // USER THUNK CREATORS
 
 export const fetchUser = () => async (dispatch) => {
   dispatch(setFetchingStatus(true));
   try {
     const { data } = await axios.get("/auth/user");
+    if (!socket) socket = socketInit(); // if not already initialized, initializes the client socket
     dispatch(gotUser(data));
     if (data.id) {
       socket.emit("go-online", data.id);
@@ -38,6 +41,7 @@ export const register = (credentials) => async (dispatch) => {
   try {
     const { data } = await axios.post("/auth/register", credentials);
     await localStorage.setItem("messenger-token", data.token);
+    socket = socketInit(); // initializes the client socket
     dispatch(gotUser(data));
     socket.emit("go-online", data.id);
   } catch (error) {
@@ -50,6 +54,7 @@ export const login = (credentials) => async (dispatch) => {
   try {
     const { data } = await axios.post("/auth/login", credentials);
     await localStorage.setItem("messenger-token", data.token);
+    socket = socketInit(); // initializes the client socket
     dispatch(gotUser(data));
     socket.emit("go-online", data.id);
   } catch (error) {
@@ -123,7 +128,8 @@ export const searchUsers = (searchTerm) => async (dispatch) => {
 export const syncSeenMessages = (convoId, messageIds) => async (dispatch) => {
   dispatch(clearUnreadBadge(convoId));
   try {
-    await axios.patch('/api/messages/seen', { convoId, messageIds, socketId: socket.id });
+    if (messageIds.length !== 0)
+      await axios.patch('/api/messages/seen', { convoId, messageIds, socketId: socket.id });
   } catch (error) {
     console.error(error);
   }
