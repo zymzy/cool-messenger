@@ -6,8 +6,9 @@ export const addMessageToStore = (state, payload) => {
       id: message.conversationId,
       otherUser: sender,
       messages: [message],
+      latestMessageText: message.text,
+      unreadCount: 1
     };
-    newConvo.latestMessageText = message.text;
     return [newConvo, ...state];
   }
 
@@ -79,5 +80,34 @@ export const addNewConvoToStore = (state, recipientId, message) => {
     } else {
       return convo;
     }
+  });
+};
+
+export const incrementUnreadBadgeFromStore = (state, convoId) => {
+  return state.map((convo) => {
+    if (convo.id === convoId) return { ...convo, unreadCount: convo.unreadCount + 1};
+    return convo;
+  });
+};
+
+export const clearUnreadBadgeFromStore = (state, convoId) => {
+  return state.map((convo) => {
+    if (convo.id === convoId) return { ...convo, unreadCount: 0};
+    return convo;
+  });
+};
+
+export const setMessagesAsSeenToStore = (state, payload) => {
+  const { convoId, messageIds } = payload;
+
+  return state.map((convo) => {
+    if (convo.id === convoId) {
+      const updatedMsgs = convo.messages.map((msg) => {
+        if (messageIds.includes(msg.id)) return { ...msg, isRead: true };
+        return msg;
+      });
+      return { ...convo, messages: updatedMsgs };
+    }
+    else return convo;
   });
 };

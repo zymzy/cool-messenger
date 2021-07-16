@@ -5,6 +5,8 @@ import {
   addConversation,
   setNewMessage,
   setSearchedUsers,
+  incrementUnreadBadge,
+  clearUnreadBadge
 } from "../conversations";
 import { gotUser, setFetchingStatus } from "../user";
 
@@ -117,3 +119,30 @@ export const searchUsers = (searchTerm) => async (dispatch) => {
     console.error(error);
   }
 };
+
+export const syncSeenMessages = (convoId, messageIds) => async (dispatch) => {
+  dispatch(clearUnreadBadge(convoId));
+  try {
+    await axios.patch('/api/messages/seen', { convoId, messageIds, socketId: socket.id });
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+export const processIncomingMessage = (data) => async (dispatch, getState) => {
+  dispatch(setNewMessage(data.message, data.sender));
+
+  const activeConvoOtherUser = getState().activeConversation;
+
+  if (activeConvoOtherUser === "") dispatch(incrementUnreadBadge(data.message.conversationId));
+  else {
+    const activeConvoOtherUserId = getState().conversations.find(convo => convo.otherUser.username === activeConvoOtherUser).otherUser.id;
+    const senderId = data.message.senderId;
+
+    if (senderId !== activeConvoOtherUserId) {
+      dispatch(incrementUnreadBadge(data.message.conversationId));
+    } else {
+      dispatch(syncSeenMessages(data.message.conversationId, [data.message.id]));
+    }
+  }
+}

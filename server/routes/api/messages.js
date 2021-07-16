@@ -1,6 +1,7 @@
 const router = require("express").Router();
 const { Conversation, Message } = require("../../db/models");
 const onlineUsers = require("../../onlineUsers");
+const { Op } = require("sequelize");
 
 // expects {recipientId, text, conversationId } in body (conversationId will be null if no conversation exists yet)
 router.post("/", async (req, res, next) => {
@@ -46,6 +47,47 @@ router.post("/", async (req, res, next) => {
     res.json({ message, sender });
   } catch (error) {
     next(error);
+  }
+});
+
+router.patch("/seen", async (req, res, next) => {
+  // perform a query to the db to set all unread messages' 'isRead' field to true
+  try {
+    if (!req.user) {
+      return res.sendStatus(401);
+    }
+
+    const senderId = req.user.id;
+    const targetConvoMessages = await Conversation.findByPk(req.body.convoId, {
+      include: [{
+        model: Message,
+        where: { id: { [Op.in]: req.body.messageIds } }
+      }]
+    });
+
+    // checks if the sender of the request is a participant in the specified conversation, if not reject
+    if (targetConvoMessages.user1Id !== senderId && targetConvoMessages.user2Id !== senderId) return res.sendStatus(403);
+
+    // checks if all messages that are requested for update are associated with the specified conversation
+    if (targetConvoMessages.messages.length !== req.body.messageIds.length) return res.sendStatus(403);
+
+    const totalAffectedRows = await Message.update({ isRead: true }, { where: {
+      id: {
+        [Op.in]: req.body.messageIds
+      }
+    } });
+    res.sendStatus(204);
+
+    // emit a socket event to convo channel to notify both users that unread messages have been seen and that db is synced
+    // (socket.io) 'server.sockets' is an alias to the default namespace. 'namespace.sockets' is a Map
+    // '.emit()' could be changed to 'to("roomX").emit()' once rooms are implemented
+    req.app.socketIo.emit("messages-are-seen", {
+      convoId: req.body.convoId,
+      messageIds: req.body.messageIds
+    });
+  } catch (error) {
+    console.log(error)
+    next(error)
   }
 });
 

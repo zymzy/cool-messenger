@@ -31,6 +31,11 @@ const server = http.createServer(app);
 
 const io = require("socket.io")(server);
 
+/**
+ * Attaching the socket server object to the express app object to allow emitting socket events in express middlewares
+ */
+app.socketIo = io;
+
 io.on("connection", (socket) => {
   socket.on("go-online", (id) => {
     if (!onlineUsers.includes(id)) {
