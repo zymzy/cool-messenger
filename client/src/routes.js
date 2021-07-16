@@ -12,6 +12,7 @@ const Routes = (props) => {
   const [snackBarOpen, setSnackBarOpen] = useState(false);
 
   useEffect(() => {
+    if(localStorage.getItem('messenger-token'))
     fetchUser();
   }, [fetchUser]);
 
