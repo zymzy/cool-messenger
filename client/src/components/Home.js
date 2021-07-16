@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React, { useEffect, useState } from "react";
 import { withStyles } from "@material-ui/core/styles";
 import { Redirect } from "react-router-dom";
 import { connect } from "react-redux";
@@ -14,41 +14,33 @@ const styles = {
   },
 };
 
-class Home extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      isLoggedIn: false,
-    };
-  }
+const Home = (props) => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  componentDidUpdate(prevProps) {
-    if (this.props.user.id !== prevProps.user.id) {
-      this.setState({
-        isLoggedIn: true,
-      });
-    }
-  }
+  useEffect(() => {
+    props.fetchConversations();
+  }, []);
 
-  componentDidMount() {
-    this.props.fetchConversations();
-  }
+  useEffect(() => {
+    setIsLoggedIn(true);
+  }, [props.user.id]);
 
-  handleLogout = async () => {
-    await this.props.logout(this.props.user.id);
+  const handleLogout = async () => {
+    await props.logout(props.user.id);
   };
 
-  render() {
-    const { classes } = this.props;
-    if (!this.props.user.id) {
+  const { classes } = props;
+
+  const render = () => {
+    if (!props.user.id) {
       // If we were previously logged in, redirect to login instead of register
-      if (this.state.isLoggedIn) return <Redirect to="/login" />;
+      if (isLoggedIn) return <Redirect to="/login" />;
       return <Redirect to="/register" />;
     }
     return (
       <>
         {/* logout button will eventually be in a dropdown next to username */}
-        <Button className={classes.logout} onClick={this.handleLogout}>
+        <Button className={classes.logout} onClick={handleLogout}>
           Logout
         </Button>
         <Grid container component="main" className={classes.root}>
@@ -59,6 +51,8 @@ class Home extends Component {
       </>
     );
   }
+
+  return render();
 }
 
 const mapStateToProps = (state) => {
