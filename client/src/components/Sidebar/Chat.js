@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React from "react";
 import { Box, Badge } from "@material-ui/core";
 import { BadgeAvatar, ChatContent } from "../Sidebar";
 import { withStyles } from "@material-ui/core/styles";
@@ -28,37 +28,36 @@ const styles = {
   }
 };
 
-class Chat extends Component {
-  handleClick = async (conversation) => {
+function Chat(props) {
+  const handleClick = async (conversation) => {
     const otherUserId = conversation.otherUser.id;
     const seenMessageIds = [];
     conversation.messages.forEach(msg => {
       if (msg.isRead === false && msg.senderId === otherUserId) seenMessageIds.push(msg.id);
     });
 
-    this.props.syncSeenMessages(conversation.id, seenMessageIds);
-    await this.props.setActiveChat(conversation.otherUser.username);
+    props.syncSeenMessages(conversation.id, seenMessageIds);
+    await props.setActiveChat(conversation.otherUser.username);
   };
 
-  render() {
-    const { classes } = this.props;
-    const otherUser = this.props.conversation.otherUser;
-    return (
-      <Box
-        onClick={() => this.handleClick(this.props.conversation)}
-        className={classes.root}
-      >
-        <BadgeAvatar
-          photoUrl={otherUser.photoUrl}
-          username={otherUser.username}
-          online={otherUser.online}
-          sidebar={true}
-        />
-        <ChatContent conversation={this.props.conversation} hasUnreadMsg={this.props.conversation.unreadCount > 0} />
-        <Badge badgeContent={this.props.conversation.unreadCount} color="primary" classes={{ badge: classes.badge, root: classes.badgeRoot}} />
-      </Box>
-    );
-  }
+  const { classes } = props;
+  const otherUser = props.conversation.otherUser;
+
+  return (
+    <Box
+      onClick={() => handleClick(props.conversation)}
+      className={classes.root}
+    >
+      <BadgeAvatar
+        photoUrl={otherUser.photoUrl}
+        username={otherUser.username}
+        online={otherUser.online}
+        sidebar={true}
+      />
+      <ChatContent conversation={props.conversation} hasUnreadMsg={props.conversation.unreadCount > 0} />
+      <Badge badgeContent={props.conversation.unreadCount} color="primary" classes={{ badge: classes.badge, root: classes.badgeRoot}} />
+    </Box>
+  );
 }
 
 const mapDispatchToProps = (dispatch) => {
