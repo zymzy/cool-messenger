@@ -11,6 +11,9 @@ const { app, sessionStore } = require("../app");
 const http = require("http");
 const db = require("../db");
 const onlineUsers = require("../onlineUsers");
+const jwt = require("jsonwebtoken");
+const { Conversation } = require("../db/models");
+const { Op } = require("sequelize");
 
 /**
  * Get port from environment and store in Express.
@@ -36,28 +39,78 @@ const io = require("socket.io")(server);
  */
 app.socketIo = io;
 
-io.on("connection", (socket) => {
-  socket.on("go-online", (id) => {
-    if (!onlineUsers.includes(id)) {
-      onlineUsers.push(id);
+// Helper function for verifying sender identity of socket events
+const validateSenderId = (registeredId, receivedId) => {
+  if (registeredId === receivedId) return true;
+  console.log("Illegitimate socket event sent by userID: ", registeredId);
+  return false;
+}
+
+// Helper function to get all convo IDs associated with a given user id; returns Array<string>
+const getConvoIdsByUserId = async (userId) => {
+  try {
+    const conversations = await Conversation.findAll({
+      where: {
+        [Op.or]: {
+          user1Id: userId,
+          user2Id: userId,
+        },
+      }
+    });
+    return conversations.map(convo => String(convo.id));
+  } catch (error) {
+    console.log("Error while trying to get convoIds by UserId: ", error);
+  }
+};
+
+io.on("connection", async (socket) => {
+  let decodedToken;
+
+  // Verifies if client socket presents a valid jwt
+  if (socket.handshake.auth.token) {
+    try {
+      const token = socket.handshake.auth.token;
+      decodedToken = jwt.verify(token, process.env.SESSION_SECRET);
+    } catch (error) {
+      console.log("Unauthenticated socket connection attempt: ", error);
+      return socket.disconnect(true);
     }
-    // send the user who just went online to everyone else who is already online
-    socket.broadcast.emit("add-online-user", id);
+  } else return socket.disconnect(true);
+
+  // Adds the client socket to rooms corresponding to the user's conversations
+  const convoIds = await getConvoIdsByUserId(decodedToken.id);
+  socket.join(convoIds);
+
+  socket.on("go-online", (id) => {
+    if (!validateSenderId(decodedToken.id, id)) return;
+
+    onlineUsers.add(id);
+    // send the user who just went online to all conversation partners who are already online
+    socket.to(convoIds).emit("add-online-user", id);
   });
 
-  socket.on("new-message", (data) => {
-    socket.broadcast.emit("new-message", {
+  socket.on("new-message", async (data) => {
+    if (!validateSenderId(decodedToken.id, data.message.senderId)) return;
+
+    // checks if the message sender is a participant in the specified conversation, if not ignore the event
+    const conversation = await Conversation.findByPk(data.message.conversationId);
+    if (decodedToken.id != conversation.user1Id && decodedToken.id != conversation.user2Id) {
+      console.log("Illegitimate socket event sent by userID: ", decodedToken.id);
+      return;
+    }
+
+    socket.to(String(data.message.conversationId)).emit("new-message", {
       message: data.message,
       sender: data.sender,
     });
   });
 
   socket.on("logout", (id) => {
-    if (onlineUsers.includes(id)) {
-      userIndex = onlineUsers.indexOf(id);
-      onlineUsers.splice(userIndex, 1);
-      socket.broadcast.emit("remove-offline-user", id);
-    }
+    if (!validateSenderId(decodedToken.id, id)) return;
+
+    onlineUsers.delete(id);
+    socket.to(convoIds).emit("remove-offline-user", id);
+    socket.disconnect(true);
   });
 });
 
